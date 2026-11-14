@@ -382,6 +382,159 @@ button{font:inherit;color:inherit}
 
 /* tweaks button: a slim tab on the right edge so it never covers the tab bar or sheets */
 #twt{top:46%!important;bottom:auto!important;right:0!important;min-height:0!important;padding:14px 7px!important;border-radius:12px 0 0 12px!important;writing-mode:vertical-rl;font-size:12px!important;letter-spacing:.06em;opacity:.82}
+/* ===== Libreta round 1 (judge r00): shorter ledger card, labelled months, receipt-slip attention, larger desktop ===== */
+.d1 .month-head{margin:6px 0 12px}
+.d1 .mt-name{font-size:40px}
+.d1 .mt-year{margin-top:4px}
+.d1 .statement{padding:16px 18px 14px 30px;background-image:repeating-linear-gradient(180deg,transparent 0 27px,color-mix(in srgb,var(--card-text) 7%,transparent) 27px 28px),radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--card-bg) 70%,#fff 12%),transparent 60%),linear-gradient(160deg,var(--card-bg),var(--card-bg2))}
+.d1 .statement::before{content:"";position:absolute;left:15px;top:0;bottom:0;width:0;border-left:1.5px dashed color-mix(in srgb,var(--card-text) 26%,transparent);pointer-events:none}
+:root.d1[data-card=paper] .statement{background-image:repeating-linear-gradient(180deg,transparent 0 27px,var(--line) 27px 28px)}
+.d1 .st-num{margin:4px 0 0;line-height:1}
+.d1 .st-num .cu-cur{font-size:.36em;vertical-align:baseline;margin-right:.18em;opacity:.75}
+.d1 .st-num .cu-dec{font-size:.5em;vertical-align:baseline;opacity:.7}
+.d1 .st-split{display:flex;gap:6px;margin-top:10px}
+.d1 .st-split button{flex:1;min-width:0;flex-direction:column;align-items:flex-start;gap:0;min-height:52px;padding:7px 12px;border-radius:12px}
+.d1 .st-split b{font-size:18px}
+.d1 .st-chart{margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--card-text) 16%,transparent)}
+.st-months .smh{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--card-muted);margin-bottom:6px}
+.smr{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;min-height:24px;color:var(--card-muted);font-size:13px}
+.smr.on{color:var(--card-text)}
+.sml{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.smt{height:8px;border-radius:9px;background:color-mix(in srgb,var(--card-text) 10%,transparent);overflow:hidden}
+.smt i{display:block;height:100%;width:calc(var(--w)*100%);border-radius:9px;background:color-mix(in srgb,var(--card-text) 45%,transparent);transform-origin:left;animation:sx .9s var(--ease) both;animation-delay:calc(var(--i)*.1s + .2s)}
+.smr.on .smt i{background:var(--card-text)}
+@keyframes sx{from{transform:scaleX(0)}}
+.smv{font:600 15px var(--font-serif);font-variant-numeric:tabular-nums;text-align:right;min-width:74px}
+.smv small{display:block;font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--card-muted);margin-top:-2px}
+.d1 .st-note{margin-top:8px}
+.d1 .actions{margin:16px 0 0}
+.d1 .act-c{width:60px;height:60px;background:var(--tint);border-color:transparent;box-shadow:none}
+.d1 .act.primary .act-c{background:var(--action);box-shadow:0 10px 20px -10px var(--action)}
+.d1 .sec{margin-top:22px}
+/* attention as a receipt slip */
+.d1 .need-wrap{filter:drop-shadow(0 1px 1px rgba(60,44,20,.08)) drop-shadow(0 10px 16px rgba(60,44,20,.12))}
+:root.d1[data-theme=dark] .need-wrap{filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
+.d1 .need-wrap .need-list{box-shadow:none;border:0;border-radius:16px 16px 0 0;padding-bottom:10px;-webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 9px repeat-x;mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 9px repeat-x}
+.d1 .need-wrap .need-list li+li .need{border-top-style:dashed;border-top-color:var(--line-strong)}
+:root.d1[data-tw-need=quiet] .need-wrap{filter:none}
+:root.d1[data-tw-need=quiet] .need-wrap .need-list{-webkit-mask:none;mask:none}
+/* ledger rules in lists */
+.d1 .rows li+li .row{border-top:1px dashed var(--line-strong)}
+.d1 .row-title{font-family:var(--font-serif);font-size:17.5px;font-weight:600}
+/* round 2 (judge r01): shorter card, bounded action group, cents, attention higher, desktop balance */
+.d1{--num-size:52px}
+.d1 .statement{padding-top:14px;padding-bottom:12px}
+.d1 .st-explain{min-height:34px}
+.d1 .st-num .cu-dec{margin-left:-.03em}
+.d1 .st-num{letter-spacing:-.035em}
+.d1 .st-split{margin-top:8px}
+.d1 .st-split button{min-height:48px;padding:5px 12px}
+.d1 .st-chart{margin-top:10px;padding-top:8px}
+.d1 .st-months .smh{display:none}
+.d1 .smr{min-height:21px}
+.d1 .smv small{display:inline;margin:0 0 0 6px}
+.d1 .st-note{margin:10px 0 0;padding-top:8px;border-top:1px solid color-mix(in srgb,var(--card-text) 14%,transparent);font-size:12.5px;line-height:1.4;color:var(--card-muted)}
+.d1 .st-out{border:0;background:none;padding:0;color:var(--card-text);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:24px}
+.d1 .actions{margin:12px 0 0;padding:12px 6px 10px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);gap:0}
+.d1 .act{min-height:88px;justify-content:center;border-radius:16px;position:relative}
+.d1 .act+.act::before{content:"";position:absolute;left:0;top:14px;bottom:24px;border-left:1px solid var(--line)}
+.d1 .act-c{width:54px;height:54px;background:color-mix(in srgb,var(--action) 15%,var(--surface));color:var(--action-strong)}
+.d1 .act-c .ic{width:24px;height:24px;stroke-width:2}
+.d1 .act.primary .act-c{color:var(--action-text)}
+:root.d1[data-act=pills] .actions{padding:6px;gap:6px}
+:root.d1[data-act=pills] .act{min-height:60px}
+:root.d1[data-act=pills] .act+.act::before{display:none}
+.d1 .need-sec{margin-top:18px}
+.d1 .need-sec .sec-h{margin-bottom:8px}
+@media (min-width:960px){
+  .d1 .screen{max-width:1220px}
+  .d1 .col-r .sec:first-child{margin-top:0}
+  .d1 .home{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0 56px}
+}
+@media (min-width:1200px){
+  .d1 body{font-size:18px}
+  .d1{--num-size:74px}
+  .d1 .mt-name{font-size:52px}
+  .d1 .statement{padding:24px 26px 20px 38px}
+  .d1 .statement::before{left:19px}
+  .d1 .act-c{width:68px;height:68px}
+  .d1 .sec-h h2{font-size:26px}
+}
+
+/* round 3 (judge r02): ledger index tabs for the month, debit/credit columns, no ruling, explicit demo line, opaque nav */
+.d1 .hello-t{display:flex;flex-direction:column;line-height:1.2}
+.d1 .hello-t small{font-size:12.5px;font-weight:600;color:var(--muted)}
+.d1 .top{margin-bottom:12px}
+.d1 .idx{display:flex;gap:4px;padding-left:22px;position:relative;z-index:1}
+.d1 .idx-t{min-width:64px;min-height:40px;padding:0 14px;border:0;border-radius:12px 12px 0 0;background:color-mix(in srgb,var(--card-bg) 16%,var(--bg));color:var(--card-bg);font:600 14px var(--font-sans);letter-spacing:.04em;cursor:pointer;transform:translateY(4px);transition:transform .25s var(--spring),background .2s}
+:root.d1[data-theme=dark] .idx-t{color:var(--card-muted);background:color-mix(in srgb,var(--card-bg) 35%,var(--bg))}
+.d1 .idx-t:active{transform:translateY(6px)}
+.d1 .idx-t.on{background:var(--card-bg);color:var(--card-text);transform:none;min-height:44px;margin-top:-4px}
+:root.d1[data-card=paper] .idx-t.on{background:var(--surface);color:var(--text);box-shadow:0 -1px 0 var(--line),1px 0 0 var(--line),-1px 0 0 var(--line)}
+.d1 .statement{border-top-left-radius:18px;padding:16px 18px 12px;background-image:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--card-bg) 70%,#fff 12%),transparent 60%),linear-gradient(170deg,var(--card-bg),var(--card-bg2))}
+:root.d1[data-card=paper] .statement{background-image:none}
+.d1 .statement::before{display:none}
+.d1 .st-month{font:500 24px var(--font-serif);font-style:italic;letter-spacing:-.01em;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.d1 .st-month span{font-style:normal;font-size:16px;color:var(--card-muted)}
+.d1 .st-month small{font:700 11px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--card-muted);font-style:normal;border:1px solid color-mix(in srgb,var(--card-text) 25%,transparent);border-radius:99px;padding:2px 8px;align-self:center}
+.d1 .st-month small.open{color:#a8f0cd;border-color:color-mix(in srgb,#a8f0cd 45%,transparent)}
+:root.d1[data-card=paper] .st-month small.open{color:var(--ok);border-color:var(--ok)}
+.d1 .st-label{display:block;margin-top:12px;font-size:12px}
+.d1 .st-num{margin-top:2px}
+.d1 .st-cols{display:grid;grid-template-columns:1fr 1fr;margin-top:12px;border-top:1px solid color-mix(in srgb,var(--card-text) 22%,transparent);border-bottom:1px solid color-mix(in srgb,var(--card-text) 22%,transparent)}
+.d1 .st-cols button{display:flex;flex-direction:column;align-items:flex-start;gap:0;border:0;background:none;color:var(--card-text);padding:8px 0 8px;min-height:56px;cursor:pointer;text-align:left;transition:background .2s}
+.d1 .st-cols button+button{border-left:1px solid color-mix(in srgb,var(--card-text) 22%,transparent);padding-left:14px}
+.d1 .st-cols button:active{background:color-mix(in srgb,var(--card-text) 8%,transparent)}
+.d1 .st-cols span{font:700 11px var(--font-sans);letter-spacing:.12em;text-transform:uppercase;color:var(--card-muted)}
+.d1 .st-cols b{font:500 22px var(--font-serif);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.01em}
+.d1 .st-chart{border-top:0;margin-top:10px;padding-top:0}
+.d1 .smv{font-variant-numeric:tabular-nums lining-nums}
+.d1 .act{transition:background .2s}
+.d1 .act:active,.d1 .act:hover{background:color-mix(in srgb,var(--action) 7%,transparent)}
+.d1 .act{gap:6px}
+.d1 .nav{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;border-top:1px solid var(--line-strong)}
+@media (min-width:960px){.d1 .nav{background:var(--surface);border-top:0}.d1 .idx{padding-left:26px}}
+@media (min-width:1200px){.d1 .st-month{font-size:30px}.d1 .st-cols b{font-size:26px}}
+
+/* round 4 (judge r03): compact card, comparison on demand, equal actions, one motif, bigger desktop */
+.d1 .statement{padding:14px 18px 6px}
+.d1 .st-label{margin-top:8px}
+.d1 .st-cols{margin-top:8px}
+.d1 .st-cols button{min-height:52px;padding-top:6px;padding-bottom:6px}
+.d1 .st-note{border-top:0;padding-top:0;margin-top:8px}
+.d1 .st-more{display:flex;align-items:center;gap:8px;width:calc(100% + 36px);margin:6px -18px 0;padding:0 18px;min-height:44px;border:0;border-top:1px solid color-mix(in srgb,var(--card-text) 16%,transparent);background:none;color:var(--card-text);font:600 14px var(--font-sans);cursor:pointer;text-align:left}
+.d1 .st-more .ic{width:18px;height:18px}
+.d1 .st-more span{flex:1}
+.d1 .st-chev{transform:rotate(90deg);transition:transform .3s var(--spring)}
+.d1 .st-more[aria-expanded=true] .st-chev{transform:rotate(-90deg)}
+.d1 .st-chart{margin:8px 0 6px}
+.d1 .st-chart:not([hidden]){animation:rise .4s var(--ease)}
+.d1 .actions{padding:14px 4px 12px}
+.d1 .act{font-size:15px;min-height:96px}
+.d1 .act+.act::before{display:none}
+.d1 .act-c,.d1 .act.primary .act-c{width:58px;height:58px;background:var(--action);color:var(--action-text);box-shadow:0 8px 16px -10px var(--action)}
+:root.d1[data-act=squircle] .act-c{border-radius:20px}
+.d1 .need-wrap{filter:none}
+.d1 .need-wrap .need-list{-webkit-mask:none;mask:none;border-radius:var(--r-card);padding-bottom:0;box-shadow:var(--shadow);border:1px solid var(--line)}
+.d1 .need-wrap .need-list li+li .need,.d1 .rows li+li .row{border-top:1px solid var(--line)}
+.d1{--grain:.05}
+.d1 .row-title{font-family:var(--font-sans);font-size:16.5px}
+@media (min-width:1200px){.d1 .screen{zoom:1.12;max-width:1100px}}
+
+/* round 5 (judge r04): action sublabels, one number system, aligned tabs */
+.d1 .act-l{display:flex;flex-direction:column;align-items:center;gap:1px}
+.d1 .act-l small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.d1 .act{min-height:108px}
+:root.d1[data-act=pills] .act-l{align-items:flex-start}
+.d1 .st-num .cu-dec{font-size:1em;opacity:.55;margin-left:0}
+.d1 .st-num .cu-cur{font-size:.34em;opacity:.7}
+.d1{--num-size:46px}
+.d1 .st-cols b{font-size:22px}
+.d1 .idx{padding-left:6px}
+.d1 .statement{border-top-left-radius:22px}
+.d1 .st-top{align-items:center}
+@media (min-width:1200px){.d1{--num-size:60px}}
+:root.d1[data-cents=raised] .st-num .cu-dec{font-size:.5em;vertical-align:.58em;opacity:.85}
 
 /* ===== Direction 2 · Bloque: one bold brand block, sans throughout, keypad-first entry ===== */
 :root{
