@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salon Books · Studio</title><meta name="robots" content="noindex, nofollow">
+<style>
+:root{--bg:#0f1012;--bar:#17181b;--line:#2a2c31;--txt:#eceae6;--mut:#9a9893;--acc:#ffc479;--pick:#3ddc84}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.4 system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+button,select{font:inherit;color:var(--txt);background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 11px;min-height:36px;cursor:pointer}
+button:hover,select:hover{border-color:#5b5e65}
+button[aria-pressed="true"]{background:var(--txt);color:#111;border-color:var(--txt)}
+select{background:#1b1c20}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 12px;background:var(--bar);border-bottom:1px solid var(--line)}
+.bar b{margin-right:8px;font-size:15px}
+.bar .grp{display:flex;gap:4px;padding-right:8px;margin-right:4px;border-right:1px solid var(--line)}
+.bar .sp{flex:1}
+.bar .pickinfo{color:var(--mut)}
+.bar .pickinfo strong{color:var(--pick)}
+.grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);min-height:0}
+.col{background:var(--bg);display:flex;flex-direction:column;min-height:0;position:relative}
+.col.picked{box-shadow:inset 0 0 0 2px var(--pick)}
+.ch{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line);min-height:46px;flex-wrap:wrap}
+.ch .t{font-weight:600;margin-right:auto}
+.ch .t small{color:var(--mut);font-weight:400;margin-left:6px}
+.ch .pk.on{background:var(--pick);color:#06240f;border-color:var(--pick)}
+.ch a{color:var(--acc);text-decoration:none;padding:7px 6px}
+.frame{flex:1;position:relative;overflow:hidden}
+.frame iframe{border:0;position:absolute;top:0;left:0;transform-origin:0 0;background:#fff}
+.single .grid{grid-template-columns:1fr}
+.single .col:not(.on){display:none}
+.note{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d1f23;border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
+.help{color:var(--mut);font-size:12px}
+@media (max-width:819px){.bar{gap:4px;padding:6px 8px}.bar b{width:100%;font-size:14px}.bar .grp{padding-right:4px;margin-right:2px}.bar button,.bar select{padding:6px 9px;min-height:40px;font-size:13px}.ch{min-height:40px}.ch .t{font-size:13px}#views [data-v="all"]{display:none}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b id="client"></b>
+  <div class="grp" id="views"></div>
+  <div class="grp"><button data-w="390" aria-pressed="true">Phone</button><button data-w="1440" aria-pressed="false">Desktop</button></div>
+  <div class="grp"><button id="tw" type="button">Tweaks</button><button id="sur" type="button">Surprise me</button><button id="rst" type="button">Reset</button></div>
+  <span class="sp"></span>
+  <span class="pickinfo" id="pickinfo">Nothing picked yet</span>
+  <button id="export" type="button">Copy my pick</button>
+</div>
+<div class="grid" id="grid"></div>
+<div class="note" id="note"></div>
+<script>
+var CFG = {"slug":"salon-books","client":"Salon Books · three app directions","dirs":[{"id":"salon-books-d1","name":"Libreta","path":"d1-libreta/index.html"},{"id":"salon-books-d2","name":"Bloque","path":"d2-bloque/index.html"},{"id":"salon-books-d3","name":"Noche","path":"d3-noche/index.html"}]};
+var W = 390, VIEW = 'all', KEY = 'studio-' + CFG.slug;
+var store = {}; try { store = JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { }
+store.snaps = store.snaps || {}; store.cur = store.cur || {};
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)) } catch (e) { } }
+function note(t) { var n = document.getElementById('note'); n.textContent = t; n.style.opacity = 1; setTimeout(function () { n.style.opacity = 0 }, 1800) }
+function enc(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o || {})))) }
+document.getElementById('client').textContent = CFG.client;
+
+// views: side by side, each direction, variations of the pick
+var views = document.getElementById('views');
+[['all', 'Side by side']].concat(CFG.dirs.map(function (d, i) { return [String(i), (i + 1) + ' ' + d.name] })).concat([['var', 'Variations of my pick']]).forEach(function (v) {
+  var b = document.createElement('button'); b.dataset.v = v[0]; b.textContent = v[1]; b.setAttribute('aria-pressed', v[0] === 'all'); b.onclick = function () { setView(v[0]) }; views.appendChild(b);
+});
+
+var grid = document.getElementById('grid');
+function frameCol(dir, idx, slot, settings, extra) {
+  var c = document.createElement('div'); c.className = 'col'; c.dataset.i = idx; c.dataset.slot = slot;
+  var ch = document.createElement('div'); ch.className = 'ch';
+  ch.innerHTML = '<span class="t">' + (idx + 1) + ' · ' + dir.name + (extra ? '<small>' + extra + '</small>' : '') + '</span>';
+  var f = document.createElement('div'); f.className = 'frame';
+  var fr = document.createElement('iframe'); fr.title = dir.name; fr.dataset.dir = dir.id;
+  fr.src = dir.path + '?tw=hidebtn' + (settings && Object.keys(settings).length ? '#tw=' + enc(settings) : '');
+  f.appendChild(fr); c.appendChild(ch); c.appendChild(f);
+  return { col: c, head: ch, frame: fr };
+}
+function buildAll() {
+  grid.innerHTML = '';
+  CFG.dirs.forEach(function (d, i) {
+    var x = frameCol(d, i, 'main', store.cur[d.id]);
+    var pk = document.createElement('button'); pk.className = 'pk' + (store.pick === d.id ? ' on' : ''); pk.textContent = store.pick === d.id ? 'Picked' : 'Pick this one'; pk.onclick = function () { store.pick = d.id; save(); buildAll(); setView(VIEW); note('Picked: ' + d.name) };
+    var op = document.createElement('a'); op.href = d.path + '?tweaks=1' + (store.cur[d.id] && Object.keys(store.cur[d.id]).length ? '#tw=' + enc(store.cur[d.id]) : ''); op.target = '_blank'; op.textContent = 'open';
+    x.head.appendChild(pk); x.head.appendChild(op);
+    if (store.pick === d.id) x.col.classList.add('picked');
+    grid.appendChild(x.col);
+  });
+  updatePick();
+}
+function buildVariations() {
+  grid.innerHTML = '';
+  var di = CFG.dirs.findIndex(function (d) { return d.id === store.pick }); if (di < 0) di = 0;
+  var d = CFG.dirs[di], snaps = store.snaps[d.id] || {};
+  ['A', 'B', 'C'].forEach(function (slot, k) {
+    var key = (store.varSel || {})[d.id + slot];
+    var settings = key === '__surprise' ? null : (key ? snaps[key] : (k === 0 ? store.cur[d.id] : null));
+    var x = frameCol(d, di, slot, settings, 'variation ' + slot);
+    var sel = document.createElement('select'); sel.setAttribute('aria-label', 'Variation ' + slot + ' settings');
+    sel.innerHTML = '<option value="">' + (k === 0 ? 'Current settings' : 'Original') + '</option>' + Object.keys(snaps).map(function (n) { return '<option' + (n === key ? ' selected' : '') + '>' + n + '</option>' }).join('');
+    sel.onchange = function () { store.varSel = store.varSel || {}; store.varSel[d.id + slot] = sel.value; save(); x.frame.contentWindow.postMessage({ tw: 'set', settings: sel.value ? snaps[sel.value] : (k === 0 ? store.cur[d.id] : {}) }, '*') };
+    var sb = document.createElement('button'); sb.textContent = 'Surprise me'; sb.onclick = function () { x.frame.contentWindow.postMessage({ tw: 'surprise' }, '*') };
+    var tb = document.createElement('button'); tb.textContent = 'Tweaks'; tb.onclick = function () { x.frame.contentWindow.postMessage({ tw: 'open' }, '*') };
+    var mk = document.createElement('button'); mk.textContent = 'Use this one'; mk.onclick = function () { x.frame.contentWindow.postMessage({ tw: 'ping' }, '*'); store.cur[d.id] = x.last || settings || {}; save(); note('Variation ' + slot + ' is now the main version of ' + d.name) };
+    x.head.appendChild(sel); x.head.appendChild(sb); x.head.appendChild(tb); x.head.appendChild(mk);
+    x.frame.dataset.slot = slot; x.col.__x = x;
+    grid.appendChild(x.col);
+    if (key === '__surprise') x.frame.addEventListener('load', function () { x.frame.contentWindow.postMessage({ tw: 'surprise' }, '*') });
+  });
+}
+function fit() { document.querySelectorAll('.frame').forEach(function (f) { var fr = f.querySelector('iframe'), w = f.clientWidth, h = f.clientHeight, s = Math.min(1, w / W); fr.style.width = W + 'px'; fr.style.height = (h / s) + 'px'; fr.style.transform = 'scale(' + s + ')'; fr.style.left = Math.max(0, (w - W * s) / 2) + 'px' }) }
+function setView(v) {
+  var wasVar = VIEW === 'var'; VIEW = v;
+  document.querySelectorAll('[data-v]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === v) });
+  if (v === 'var') buildVariations(); else if (wasVar || !grid.children.length) buildAll();
+  document.body.classList.toggle('single', v !== 'all' && v !== 'var');
+  document.querySelectorAll('.col').forEach(function (c) { c.classList.toggle('on', c.dataset.i === v) });
+  setTimeout(fit, 0);
+}
+function activeFrames() { return Array.prototype.filter.call(document.querySelectorAll('.col'), function (c) { return getComputedStyle(c).display !== 'none' }).map(function (c) { return c.querySelector('iframe') }) }
+document.getElementById('tw').onclick = function () { var f = activeFrames(); if (f.length > 1 && VIEW === 'all') { note('Open one direction first (tabs above), or use Variations'); return } f.forEach(function (x) { x.contentWindow.postMessage({ tw: 'open' }, '*') }) };
+document.getElementById('sur').onclick = function () { activeFrames().forEach(function (x) { x.contentWindow.postMessage({ tw: 'surprise' }, '*') }) };
+document.getElementById('rst').onclick = function () { activeFrames().forEach(function (x) { x.contentWindow.postMessage({ tw: 'set', settings: {} }, '*') }) };
+document.querySelectorAll('[data-w]').forEach(function (b) { b.onclick = function () { W = +b.dataset.w; document.querySelectorAll('[data-w]').forEach(function (x) { x.setAttribute('aria-pressed', x === b) }); fit() } });
+addEventListener('resize', fit);
+addEventListener('message', function (m) {
+  var d = m.data || {}; if (!d.tw) return;
+  var fr = Array.prototype.find.call(document.querySelectorAll('iframe'), function (f) { return f.contentWindow === m.source }); if (!fr) return;
+  var dir = fr.dataset.dir;
+  if (d.tw === 'changed') { if (fr.dataset.slot === 'A' || !fr.dataset.slot || fr.dataset.slot === 'main') { if (VIEW !== 'var' || fr.dataset.slot === 'A') { store.cur[dir] = d.settings; save() } } var col = fr.closest('.col'); if (col && col.__x) col.__x.last = d.settings; }
+  if (d.tw === 'snapshot') { store.snaps[dir] = store.snaps[dir] || {}; store.snaps[dir][d.name] = d.settings; save(); note('Snapshot "' + d.name + '" saved. Use it in Variations.') }
+});
+function updatePick() { var d = CFG.dirs.find(function (x) { return x.id === store.pick }); document.getElementById('pickinfo').innerHTML = d ? 'Picked: <strong>' + d.name + '</strong>' : 'Nothing picked yet' }
+document.getElementById('export').onclick = function () {
+  var d = CFG.dirs.find(function (x) { return x.id === store.pick });
+  var txt = CFG.client + '\nPicked direction: ' + (d ? d.name : '(none)') + '\nCurrent settings: ' + JSON.stringify(d ? store.cur[d.id] || {} : {}) + '\nSnapshots: ' + JSON.stringify(d ? store.snaps[d.id] || {} : {});
+  navigator.clipboard.writeText(txt).then(function () { note('Copied. Paste it to Claude to lock it in.') });
+};
+buildAll(); setView(innerWidth < 820 ? '0' : 'all');
+</script>
+</body>
+</html>
