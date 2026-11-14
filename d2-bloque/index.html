@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Salon Books app design direction (fictional demo data).">
 <meta name="theme-color" content="#0b5d63">
 <title>Salon Books · Bloque</title>
 <style>
@@ -535,6 +536,13 @@ button{font:inherit;color:inherit}
 .d1 .st-top{align-items:center}
 @media (min-width:1200px){.d1{--num-size:60px}}
 :root.d1[data-cents=raised] .st-num .cu-dec{font-size:.5em;vertical-align:.58em;opacity:.85}
+
+/* audit fixes + order option */
+.d1 .idx-t{min-height:44px}
+.d1 .idx-t.on{min-height:48px}
+.d1 .st-explain{min-height:44px}
+.d1 .col-l{display:flex;flex-direction:column}
+:root.d1[data-order=actions] .col-l .actions{order:-1;margin:0 0 14px}
 
 /* ===== Direction 2 · Bloque: one bold brand block, sans throughout, keypad-first entry ===== */
 :root{

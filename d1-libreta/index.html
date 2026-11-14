@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Salon Books app design direction (fictional demo data).">
 <meta name="theme-color" content="#faf5ea">
 <title>Salon Books · Libreta</title>
 <style>
@@ -535,6 +536,13 @@ button{font:inherit;color:inherit}
 .d1 .st-top{align-items:center}
 @media (min-width:1200px){.d1{--num-size:60px}}
 :root.d1[data-cents=raised] .st-num .cu-dec{font-size:.5em;vertical-align:.58em;opacity:.85}
+
+/* audit fixes + order option */
+.d1 .idx-t{min-height:44px}
+.d1 .idx-t.on{min-height:48px}
+.d1 .st-explain{min-height:44px}
+.d1 .col-l{display:flex;flex-direction:column}
+:root.d1[data-order=actions] .col-l .actions{order:-1;margin:0 0 14px}
 </style>
 </head>
 <body>
@@ -604,6 +612,7 @@ button{font:inherit;color:inherit}
       { id: 'chart', label: 'Chart in the card', type: 'select', options: ['Labelled month bars', 'Line (result)', 'None'], value: 'Labelled month bars', apply: function (v, api) { var c = { 'Labelled month bars': '', 'Line (result)': 'line', 'None': 'none' }[v]; if (api.root.dataset.chart !== c) { api.root.dataset.chart = c; if (SB.ready) SB.render({ instant: true }); } } },
       { id: 'grain', label: 'Paper texture', type: 'range', min: 0, max: .35, step: .01, value: .05, apply: function (v, api) { api.root.style.setProperty('--grain', v); } },
       { id: 'act', label: 'Action buttons', type: 'select', options: ['Round icons', 'Squircles', 'Labelled rows'], value: 'Round icons', apply: function (v, api) { api.root.dataset.act = { 'Round icons': '', 'Squircles': 'squircle', 'Labelled rows': 'pills' }[v]; } },
+      { id: 'order', label: 'Phone order', type: 'select', options: ['Big number first', 'Actions first'], value: 'Big number first', apply: function (v, api) { api.root.dataset.order = v === 'Actions first' ? 'actions' : ''; } },
       { id: 'need', label: '"Needs you" look', type: 'select', options: ['White card, apricot dots', 'Apricot block', 'Quiet list'], value: 'White card, apricot dots', apply: function (v, api) { api.root.dataset.twNeed = { 'White card, apricot dots': '', 'Apricot block': 'block', 'Quiet list': 'quiet' }[v]; } },
       { id: 'days', label: 'Day headers in lists', type: 'toggle', value: true, apply: function (v, api) { api.root.dataset.days = v ? '' : 'off'; } },
       { id: 'hap', label: 'Vibration on tap', type: 'toggle', value: true, apply: function (v) { SB.prefs.haptics = v; } },
