@@ -36,16 +36,17 @@ h1{font:500 clamp(34px,8vw,56px)/1.02 var(--font-serif);font-style:italic;letter
 .shots figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:5px}
 .try{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;min-height:48px;border-radius:99px;background:var(--text);color:var(--bg);font-weight:650;text-decoration:none;font-size:15px}
 .cur{font:700 11px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--bg);background:var(--muted);border-radius:99px;padding:3px 9px}
+.shades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}.shades div{height:44px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:flex-end;padding:4px 8px;font:700 10.5px var(--font-sans);letter-spacing:.08em;text-transform:uppercase}
 .foot{margin-top:36px;font-size:14px;color:var(--muted);max-width:640px;line-height:1.5}
 </style>
 </head>
 <body>
 <main class="wrap">
-  <h1>Cuaderno, en nueve colores</h1>
-  <p class="lede">La misma app, la misma estructura. Solo cambian los colores y el efecto de la tarjeta grande. Cada paleta usa una familia de color en varios tonos, un papel cálido y un solo color de aviso para lo que necesita atención.</p>
-  <p class="how"><b>Cómo elegir:</b> mira las dos capturas (claro y oscuro), luego toca <b>Probar en la app</b>. Arriba aparece una barra con ‹ › para pasar de una paleta a otra sin salir de la pantalla. Dime el número o el nombre de la que te guste, o dos para mezclar.</p>
+  <h1 id="h">Cuaderno, en colores</h1>
+  <p class="lede">La misma app, la misma estructura. Solo cambian los colores, el efecto de la tarjeta grande y su tono (suave, medio o profundo). Cada paleta usa una familia de color en varios tonos, un papel cálido y un solo color de aviso para lo que necesita atención.</p>
+  <p class="how"><b>Cómo elegir:</b> mira las dos capturas (claro y oscuro), luego toca <b>Probar en la app</b>. Arriba aparece una barra: ‹ › cambia de paleta y <b>◐</b> cambia el tono de la tarjeta, sin salir de la pantalla. Dime el número y el tono (por ejemplo "12 profundo"), o dos para mezclar.</p>
   <div class="grid" id="grid"></div>
-  <p class="foot">Todos los colores pasan contraste AA (texto 4.5:1) en modo claro y oscuro. Demostración con datos ficticios.</p>
+  <p class="foot">Todas las paletas, en sus tres tonos, pasan contraste AA (texto 4.5:1) en modo claro y oscuro. Demostración con datos ficticios.</p>
 </main>
 <script>
 document.getElementById('grid').innerHTML = (window.SB_PALETTES || []).map(function (p, i) {
@@ -53,9 +54,11 @@ document.getElementById('grid').innerHTML = (window.SB_PALETTES || []).map(funct
   return '<article class="pal" id="' + p.id + '"><div class="ph"><span class="num">' + String(i + 1).padStart(2, '0') + '</span><h2>' + p.name + '</h2>' + (p.id === 'actual' ? '<span class="cur">la de ahora</span>' : '<span class="fx">' + p.fx + '</span>') + '</div>' +
     '<p class="theory">' + p.theory + '</p>' +
     '<div class="sw" aria-hidden="true"><i style="background:' + s[0] + '"></i><i style="background:' + s[1] + '"></i><i style="background:' + s[2] + '"></i><i class="big" style="background:linear-gradient(135deg,' + s[3] + ',' + s[4] + ')"></i><i style="background:' + s[5] + '"></i></div>' +
+    '<div class="shades">' + ['suave','medio','profundo'].map(function (k) { var c = p.sh[k]; return '<div style="background:linear-gradient(160deg,' + c[0] + ',' + c[1] + ');color:' + p.sw[k === 'suave' && 0 ? 1 : 0] + '"><span style="background:rgba(0,0,0,.35);color:#fff;border-radius:6px;padding:1px 6px">' + k + '</span></div>'; }).join('') + '</div>' +
     '<div class="shots"><figure><img loading="lazy" src="img/' + p.id + '-claro.jpg" alt="Inicio de ' + p.name + ' en modo claro"><figcaption>Claro</figcaption></figure><figure><img loading="lazy" src="img/' + p.id + '-oscuro.jpg" alt="Inicio de ' + p.name + ' en modo oscuro"><figcaption>Oscuro</figcaption></figure></div>' +
     '<a class="try" href="../v1-cuaderno/index.html?p=' + p.id + '">Probar en la app ›</a></article>';
 }).join('');
+document.getElementById('h').textContent = 'Cuaderno, en ' + SB_PALETTES.length + ' colores';
 </script>
 </body>
 </html>

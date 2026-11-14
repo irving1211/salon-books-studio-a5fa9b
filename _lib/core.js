@@ -228,9 +228,26 @@
     if (e.flag === 'Sin clasificar') return { t: 'Sin categoría · no cuenta', k: 'need' };
     if (e.flag) return { t: 'Espera a tu contador', k: 'wait' };
     if (e.kind === 'payout') return { t: 'Dinero de ' + SB.renter(e.who).short + ' · no es gasto tuyo', k: 'off' };
+    if (e.kind === 'tips') return { t: 'Propinas de tu equipo · no cuentan', k: 'off' };
     if (e.dir === 'move') return { t: 'Entre tus cuentas · no cuenta', k: 'off' };
     if (!e.inTotals) return { t: 'Aporte tuyo · no cuenta', k: 'off' };
     return null;
+  };
+  // the readable tag shown on a row (Dinero, Inicio): says plainly why a row does not count
+  SB.tagFor = function (e) {
+    if (e.status) return { t: 'Anulado', k: 'void' };
+    if (SB.dupOpen(e)) return { t: '¿Repetido?', k: 'need', need: 'a2' };
+    if (e.flag === 'Sin clasificar') return { t: 'Sin categoría · no cuenta', k: 'need' };
+    if (e.flag) return { t: 'Espera a tu contador', k: 'wait' };
+    if (e.kind === 'payout') return { t: 'No cuenta · dinero de ' + SB.renter(e.who).short, k: 'off' };
+    if (e.kind === 'tips') return { t: 'No cuenta · propinas de tu equipo', k: 'off' };
+    if (e.dir === 'move') return { t: 'No cuenta · entre tus cuentas', k: 'off' };
+    if (!e.inTotals) return { t: 'No cuenta · aporte tuyo', k: 'off' };
+    return null;
+  };
+  SB.tagHtml = function (w, cls) {
+    if (!w) return '';
+    return '<span class="' + cls + ' ' + (cls === 'tag' ? 'tag-' : 'k-') + w.k + '"' + (w.need ? ' data-tag-need="' + w.need + '" role="link" title="Abrir la decisión en Revisar"' : '') + '>' + w.t + (w.need ? ' ›' : '') + '</span>';
   };
   SB.list = function (o) {
     o = o || {}; var p = o.period, f = o.filter || 'all', q = (o.q || '').trim().toLowerCase();
@@ -238,7 +255,7 @@
       if (e.date > SB.today) return false;
       if (p && !SB.inP(e, p)) return false;
       if (f === 'in' && e.dir !== 'in') return false;
-      if (f === 'out' && e.dir !== 'out') return false;
+      if (f === 'out' && (e.dir !== 'out' || e.kind === 'payout')) return false;
       if (f === 'rent' && !e.who) return false;
       if (f === 'pending' && !e.flag && !SB.dupOpen(e)) return false;
       if (f === 'off' && e.inTotals) return false;
@@ -569,7 +586,7 @@
     list: function (el, c) { var L = SB.list({ period: c.state.q ? null : c.p, filter: c.state.filter, q: c.state.q }); SB.swap(el, (SB.ui[el.dataset.style || 'groups'] || SB.ui.groups)(L.groups, c)); },
     listsum: function (el, c) { var L = SB.list({ period: c.state.q ? null : c.p, filter: c.state.filter, q: c.state.q }); SB.slideText(el, c.state.q ? L.items.length + ' resultado' + (L.items.length === 1 ? '' : 's') + ' en todo el año' : L.items.length + ' movimiento' + (L.items.length === 1 ? '' : 's') + ' en ' + c.p.word); },
     cats: function (el, c) { SB.swap(el, SB.ui.cats(c.p, el.dataset.style)); },
-    filters: function (el, c) { el.querySelectorAll('[data-filter]').forEach(function (b) { var on = b.dataset.filter === c.state.filter; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); }); },
+    filters: function (el, c) { SB.edgeFade(el); el.querySelectorAll('[data-filter]').forEach(function (b) { var on = b.dataset.filter === c.state.filter; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); }); },
     review: function (el) { SB.swap(el, SB.ui.review(el.dataset.style), { noHeight: el.dataset.style === 'stack' }); },
     progress: function (el) { var all = SB.attention.length, done = all - SB.attentionOpen().length; el.style.setProperty('--p', done / all); el.setAttribute('aria-valuenow', done); },
     progresstext: function (el) { var all = SB.attention.length, done = all - SB.attentionOpen().length; SB.slideText(el, done === all ? 'Todo resuelto' : done + ' de ' + all + ' resueltos'); },
@@ -579,7 +596,15 @@
     cmp: function (el, c) { var x = SB.compare(c.p); SB.slideText(el, x.t); el.dataset.dir = x.dir; },
     alert: function (el) { SB.swap(el, SB.ui.alert(), { noHeight: true }); },
     warn: function (el, c) { var a = SB.attention.find(function (x) { return x.kind === 'dup'; }), on = a && !a.done && a.date >= c.p.start && a.date <= c.p.end; el.hidden = !on; if (on) el.innerHTML = I('flag') + '<span>Puede haber un repetido de ' + M(a.amount) + '</span><b>Revisar</b>'; },
+    sqline: function (el) { var l = SB.square.last; el.innerHTML = 'Ventas de Square: ' + (l ? 'al día hasta el ' + SB.dm(l.until) : 'sin importar todavía') + ' <span aria-hidden="true">·</span> <b>Subir</b>' + I('chev'); },
     rcount: function (el) { var n = SB.receipts.filter(function (r) { return !r.done; }).length; el.textContent = n; el.hidden = !n; }
+  };
+  // a visible fade on the side where a chip row still scrolls
+  SB.edgeFade = function (el) {
+    var w = el.parentNode; if (!w || !w.classList.contains('chips-wrap')) return;
+    var upd = function () { w.classList.toggle('at-start', el.scrollLeft < 4); w.classList.toggle('at-end', el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); };
+    if (!el._fade) { el._fade = 1; el.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); }
+    upd(); requestAnimationFrame(upd);
   };
   function ctx() { var p = SB.period(); return { p: p, t: SB.totals(p), state: SB.state }; }
   function mountBound(scope) { var c = ctx(); scope.querySelectorAll('[data-b]').forEach(function (el) { var f = SB.binders[el.dataset.b]; if (f) f(el, c); }); }
@@ -639,7 +664,7 @@
   SB.ui.truth = 'Ingresos menos gastos, antes de la revisión de tu contador. No es un cálculo de impuestos.';
   SB.ui.row = function (e, o) {
     o = o || {}; var r = e.who && SB.renter(e.who);
-    var w = SB.why(e), tag = w ? '<span class="tag tag-' + (w.k === 'need' ? 'need' : w.k === 'void' ? 'void' : 'wait') + '">' + w.t + '</span>' : '';
+    var tag = (e.square ? '<span class="tag tag-sq">Square</span> ' : '') + SB.tagHtml(SB.tagFor(e), 'tag');
     var ic = e.dir === 'in' ? 'in' : e.dir === 'move' ? 'move' : (e.cat && SB.cat(e.cat).icon) || 'out';
     return '<li><button class="row' + (e.status ? ' is-void' : '') + (SB.justSaved === e.id ? ' just' : '') + '" data-entry="' + e.id + '" data-h="select">' +
       '<span class="row-ic ' + e.dir + '"' + (r ? ' style="--who:' + r.colour + '"' : '') + '>' + (r ? '<span class="who-dot" aria-hidden="true"></span>' : '') + I(ic) + '</span>' +
@@ -659,8 +684,8 @@
       groups.map(function (g) {
         return '<div class="lg-day" role="rowgroup"><div class="lg-date" role="row"><span role="cell">' + SB.cap(g.label) + '</span><span role="cell" class="lg-ds">' + daySum(g.items) + '</span></div>' + g.items.map(function (e) {
           var r = e.who && SB.renter(e.who), cls = (e.status ? ' is-void' : '') + (!e.inTotals ? ' off' : '') + (SB.justSaved === e.id ? ' just' : '');
-          var w = SB.why(e), tag = w ? w.t : ''; if (w) cls += ' why-' + w.k;
-          return '<button class="lg-row' + cls + '" role="row" data-entry="' + e.id + '" data-h="select"><span class="lg-c" role="cell">' + (r ? '<i class="who-pip" style="--who:' + r.colour + '"></i>' : '') + '<b>' + esc(e.title) + '</b><small>' + esc(e.cat ? SB.cat(e.cat).name : SB.sub(e)) + (tag ? '</small><em class="lg-why ' + w.k + '">' + tag + '</em><small hidden>' : '') + '</small></span>' +
+          var w = SB.tagFor(e); if (w) cls += ' why-' + w.k;
+          return '<button class="lg-row' + cls + '" role="row" data-entry="' + e.id + '" data-h="select"><span class="lg-c" role="cell">' + (r ? '<i class="who-pip" style="--who:' + r.colour + '"></i>' : '') + '<b>' + esc(e.title) + '</b><small>' + esc(e.cat ? SB.cat(e.cat).name : SB.sub(e)) + '</small><span class="lg-tags">' + (e.square ? '<em class="lg-sq">Square</em>' : '') + SB.tagHtml(w, 'lg-why').replace(/<em/, '<em') + '</span></span>' +
             '<span class="lg-n in" role="cell">' + (e.dir === 'in' ? M(e.amount).replace('US$', '') : '') + '</span><span class="lg-n out" role="cell">' + (e.dir === 'out' || e.dir === 'move' ? M(e.amount).replace('US$', '') : '') + '</span></button>';
         }).join('') + '</div>';
       }).join('') + '</div>';
@@ -699,7 +724,7 @@
       (four ? '<a class="act" href="#/dinero"><span class="act-c">' + I('search') + '</span><span class="act-l">Buscar<small>Por palabra o monto</small></span></a>' : '') + '</nav>';
   };
   SB.ui.search = function () { return '<label class="search">' + I('search') + '<input id="q" type="search" placeholder="Buscar por palabra o monto" value="' + esc(SB.state.q) + '" autocomplete="off" aria-label="Buscar movimientos"></label>'; };
-  SB.ui.filterChips = function () { return '<div class="chips scroll" role="group" aria-label="Filtros" data-b="filters">' + SB.filters.map(function (f) { return '<button class="chip" data-filter="' + f[0] + '" aria-pressed="false" data-h="select">' + f[1] + '</button>'; }).join('') + '</div>'; };
+  SB.ui.filterChips = function () { return '<div class="chips-wrap at-start"><div class="chips scroll" role="group" aria-label="Filtros" data-b="filters">' + SB.filters.map(function (f) { return '<button class="chip" data-filter="' + f[0] + '" aria-pressed="false" data-h="select">' + f[1] + '</button>'; }).join('') + '</div></div>'; };
   SB.ui.cats = function (p, style) {
     var c = SB.byCat(p), mx = c.rows.length ? c.rows[0].v : 1;
     if (!c.rows.length && !c.wait.length) return '<p class="muted-p">No hay gastos con categoría en ' + p.word + '.</p>';
@@ -731,10 +756,17 @@
     if (a.kind === 'close') return '<div class="rv-acts"><button class="btn btn-main" data-close-month="' + a.id + '">' + I('lock') + 'Ver y cerrar septiembre</button><button class="btn btn-quiet" data-do="later" data-id="' + a.id + '">Más tarde</button></div>';
     return '<div class="rv-acts"><button class="btn btn-main" data-do="confirm" data-id="' + a.id + '">Lo revisé</button><button class="btn btn-quiet" data-do="accountant" data-id="' + a.id + '">Para tu contador</button></div>';
   }
+  // what still blocks closing September, and what closing means, in plain words
+  SB.closeBlockers = function () { return SB.attentionOpen().filter(function (a) { return a.kind !== 'close' && a.date && a.date.slice(0, 7) === '2026-09'; }); };
+  SB.closeInfo = function () {
+    var b = SB.closeBlockers();
+    return '<div class="rv-block">' + (b.length ? '<p class="rv-bh">' + I('flag') + 'Falta resolver antes de cerrar (' + b.length + ')</p><ul>' + b.map(function (a) { return '<li><button type="button" data-need="' + a.id + '"><span class="need-dot"></span><span>' + a.title + '<small>' + SB.dm(a.date) + ' · ' + M(a.amount) + '</small></span>' + I('chev') + '</button></li>'; }).join('') + '</ul>' : '<p class="rv-bh ok">' + I('check') + 'Nada falta: septiembre está listo para cerrar.</p>') +
+      '<p class="rv-close">' + I('lock') + '<span><b>Cerrar quiere decir:</b> ya no se puede cambiar sin reabrirlo. Para reabrirlo: Más → «Septiembre está cerrado» → Reabrir.</span></p></div>';
+  };
   SB.ui.review = function (style) {
     var open = SB.attentionOpen(), all = SB.attention.length;
     if (!open.length) return '<div class="all-clear big-clear">' + I('check') + '<p><b>Todo resuelto.</b> Tus libros están al día para tu contador.</p></div>';
-    var item = function (a, i) { return '<article class="rv" data-rv="' + a.id + '" style="--k:' + i + '"><p class="rv-k">' + I(NIC[a.kind]) + a.title + '</p><h3 class="rv-t">' + a.ask + '</h3><p class="rv-meta">' + (a.amount ? SB.dateShort(a.date) + ' · ' + M(a.amount) : a.sub) + '</p><p class="rv-why">' + a.why + '</p>' + decisions(a) + '</article>'; };
+    var item = function (a, i) { return '<article class="rv" data-rv="' + a.id + '" style="--k:' + i + '"><p class="rv-k">' + I(NIC[a.kind]) + a.title + '</p><h3 class="rv-t">' + a.ask + '</h3><p class="rv-meta">' + (a.amount ? SB.dateShort(a.date) + ' · ' + M(a.amount) : a.sub) + '</p><p class="rv-why">' + a.why + '</p>' + (a.kind === 'close' ? SB.closeInfo() : '') + decisions(a) + '</article>'; };
     if (style === 'stack') return '<div class="stack" style="--n:' + open.length + '">' + open.slice(0, 3).map(function (a, i) { return item(a, i); }).reverse().join('') + '</div>' + (open.length > 1 ? '<p class="stack-l">Después de esta (' + (open.length - 1) + '):</p><ul class="stack-next">' + open.slice(1).map(function (a) { return '<li><button data-need="' + a.id + '"><span class="need-dot"></span>' + a.title + (a.amount ? '<small>' + M(a.amount) + '</small>' : '') + '</button></li>'; }).join('') + '</ul>' : '');
     if (style === 'check') return '<ul class="checklist">' + SB.attention.map(function (a) { return '<li class="ck' + (a.done ? ' done' : '') + '">' + (a.done ? '<div class="ck-row"><span class="ck-box on">' + I('check') + '</span><span class="ck-t"><b>' + a.title + '</b><span>Resuelto</span></span></div>' : '<details class="ck-d"' + (a === open[0] ? ' open' : '') + '><summary class="ck-row"><span class="ck-box"></span><span class="ck-t"><b>' + a.ask + '</b><span>' + a.title + ' · ' + (a.amount ? SB.dm(a.date) + ' · ' + M(a.amount) : a.sub) + '</span></span>' + I('chevD', 'ck-chev') + '</summary><div class="ck-body"><p class="rv-why">' + a.why + '</p>' + decisions(a) + '</div></details>') + '</li>'; }).join('') + '</ul>';
     return '<div class="rv-list">' + open.map(item).join('') + '</div>';
@@ -793,23 +825,50 @@
   };
   // one place that applies a decision, closes what is open, animates the item away and patches every number
   SB.closeSheet = function (aid) {
-    var p = { start: '2026-09-01', end: '2026-09-30' }, t = SB.totals(p), open = SB.attentionOpen().filter(function (a) { return a.kind !== 'close'; });
-    SB.sheet('<div class="sh-body"><p class="sh-kicker">' + I('lock') + 'Cerrar el mes</p><h2 class="sh-title">Septiembre de 2026</h2><div class="sh-eq"><span>Entró<b>' + M(t.in) + '</b></span><i>−</i><span>Salió<b>' + M(t.out) + '</b></span><i>=</i><span>Resultado<b>' + M(t.res) + '</b></span></div>' +
+    var p = { start: '2026-09-01', end: '2026-09-30' }, t = SB.totals(p), open = SB.closeBlockers();
+    SB.sheet('<div class="sh-body"><p class="sh-kicker">' + I('lock') + 'Cerrar el mes</p><h2 class="sh-title">¿Cerrar septiembre?</h2><p class="sh-why">' + I('lock') + '<span><b>Ya no se puede cambiar sin reabrirlo.</b> Para reabrirlo: Más → «Septiembre está cerrado» → Reabrir.</span></p><div class="sh-eq"><span>Entró<b>' + M(t.in) + '</b></span><i>−</i><span>Salió<b>' + M(t.out) + '</b></span><i>=</i><span>Resultado<b>' + M(t.res) + '</b></span></div>' +
+      (open.length ? '<p class="sh-label">Todavía falta resolver (' + open.length + ')</p><ul class="rv-miss">' + open.map(function (a) { return '<li><span class="need-dot"></span><span>' + a.title + '</span><b>' + M(a.amount) + '</b></li>'; }).join('') + '</ul><p class="sh-why warnbox">' + I('flag') + '<span>Si cierras ahora, esto queda fuera del resultado de septiembre. Mejor resuélvelo primero en Revisar.</span></p>' : '<p class="sh-why">' + I('check') + '<span>No falta nada por resolver en septiembre.</span></p>') +
       (t.outside.length ? '<p class="sh-label">Se quedan fuera y esperan a tu contador</p><ul class="rows">' + t.outside.map(function (e) { return SB.ui.row(e, { date: true }); }).join('') + '</ul>' : '') +
-      (open.length ? '<p class="sh-why warnbox">' + I('flag') + '<span>Todavía tienes ' + open.length + ' cosa' + (open.length > 1 ? 's' : '') + ' por revisar. Puedes cerrar igual: lo de septiembre que esté pendiente queda fuera del resultado.</span></p>' : '') +
-      '<p class="sh-why">' + I('info') + '<span>Al cerrar, estos números quedan fijos para tu contador. Si hace falta cambiar algo, lo reabres desde Más y queda anotado quién y cuándo.</span></p>' +
       '<div class="sh-actions"><button class="btn btn-main" data-do="confirm" data-id="' + aid + '">' + I('lock') + 'Sí, cerrar septiembre</button></div><button class="btn btn-quiet sh-done" data-close>Todavía no</button></div>', { label: 'Cerrar septiembre' });
+  };
+  // a plain confirmation before something that changes the books
+  SB.confirmSheet = function (o) {
+    SB.sheet('<div class="sh-body"><p class="sh-kicker need">' + I('flag') + o.kicker + '</p><h2 class="sh-title">' + o.title + '</h2><p class="sh-why">' + I('info') + '<span>' + o.text + '</span></p><div class="sh-actions"><button class="btn btn-main" data-yes>' + o.yes + '</button></div><button class="btn btn-quiet sh-done" data-close>' + (o.no || 'No, volver') + '</button></div>', {
+      label: o.title, onMount: function (sh, close) { sh.querySelector('[data-yes]').addEventListener('click', function () { close(); o.onYes(); }); }
+    });
+  };
+  SB.reopenSept = function () {
+    var a = SB.attention.find(function (x) { return x.kind === 'close'; });
+    var redraw = function () { if (SB.route().name === 'mas') SB.go('mas', { force: true, replace: true, dir: 0, keepScroll: true }); };
+    SB.confirmSheet({ kicker: 'Reabrir el mes', title: '¿Reabrir septiembre?', text: 'Septiembre volverá a poder cambiarse. Quedará otra vez en tu lista de Revisar para cerrarlo de nuevo.', yes: 'Sí, reabrir septiembre', onYes: function () {
+      var was = SB.closedSept; SB.closedSept = null; a.done = false; SB.haptic('success');
+      SB.toast('Reabriste septiembre', null, function () { SB.closedSept = was; a.done = true; SB.refresh(); redraw(); });
+      SB.refresh(); redraw();
+    } });
   };
   SB.decide = function (id, how) {
     var a = SB.attention.find(function (x) { return x.id === id; }); if (!a) return;
-    if (how === 'later') { SB.toast('Lo verás aquí otra vez mañana'); closeSheets(); return; }
+    if (how === 'later') {
+      var i0 = SB.attention.indexOf(a); SB.attention.splice(i0, 1); SB.attention.push(a); closeSheets();
+      SB.toast('Dejaste «' + a.title + '» para más tarde', null, function () { SB.attention.splice(SB.attention.indexOf(a), 1); SB.attention.splice(i0, 0, a); SB.refresh(); });
+      SB.refresh(); return;
+    }
     var card = doc.querySelector('[data-rv="' + id + '"]'), en0 = a.entry && SB.entries.find(function (x) { return x.id === a.entry; }), snap = en0 && JSON.stringify(en0);
     var undo = function () { a.done = false; if (en0) Object.keys(en0).forEach(function (k) { delete en0[k]; }), Object.assign(en0, JSON.parse(snap)); if (a.kind === 'close') SB.closedSept = null; SB.refresh(); };
+    var say = function () {
+      var amt = a.amount ? ' de ' + M(a.amount) : '';
+      if (a.kind === 'cat') return how && how.cat ? 'Anotaste la compra' + amt + ' como «' + SB.cat(how.cat).name + '»' : 'Dejaste la compra' + amt + ' para tu contador';
+      if (a.kind === 'dup') return how === 'void' ? 'Anulaste la segunda anotación de guantes (' + M(a.amount) + ')' : 'Confirmaste que las dos anotaciones de guantes son reales';
+      if (a.kind === 'tax') return how === 'accountant' ? 'Pasaste el impuesto' + amt + ' a tu contador' : 'Marcaste el impuesto' + amt + ' como revisado';
+      if (a.kind === 'equip') return how === 'accountant' ? 'Dejaste la secadora para tu contador' : 'Marcaste la secadora como revisada';
+      if (a.kind === 'close') return 'Cerraste septiembre';
+      return 'Resolviste «' + a.title + '»';
+    };
     var apply = function () {
       if (a.kind === 'cat' && how && how.cat) { var en = SB.entries.find(function (x) { return x.id === a.entry; }); en.cat = how.cat; var c = SB.cat(how.cat); en.inTotals = !c.pending; en.flag = c.pending ? 'Pendiente de tu contador' : null; }
       if (a.kind === 'dup' && how === 'void') { var d = SB.entries.find(function (x) { return x.id === a.entry; }); d.inTotals = false; d.status = 'Anulado'; }
       a.done = true; SB.haptic('success'); if (a.kind === 'close') SB.closedSept = { by: 'Mía', at: SB.today };
-      SB.toast(how && how.cat ? 'Listo: ahora cuenta como ' + SB.cat(how.cat).name : how === 'void' ? 'Anulada. Ya no cuenta en tus libros' : how === 'accountant' ? 'Guardado para tu contador' : a.kind === 'close' ? 'Septiembre quedó cerrado' : 'Listo, lo revisaste', null, undo);
+      SB.toast(say(), null, undo);
       SB.refresh();
     };
     closeSheets();
@@ -817,25 +876,60 @@
     else apply();
   };
   function closeSheets() { doc.querySelectorAll('.sheet-wrap .scrim').forEach(function (s) { s.click(); }); }
-  SB.reportSheet = function () {
-    var p = SB.period('year'), t = SB.totals(p), c = SB.byCat(p), ins = {};
+  SB.reportPeriod = function (key) {
+    if (key === 'year') return SB.period('year');
+    var m = key.slice(2); return { start: m + '-01', end: m + '-' + daysIn(m), long: SB.monthLabel(m), title: SB.cap(SB.monthName(m)), word: 'el mes' };
+  };
+  SB.reportBody = function (key) {
+    var p = SB.reportPeriod(key), t = SB.totals(p), c = SB.byCat(p), ins = {};
     SB.entries.forEach(function (e) { if (SB.inP(e, p) && e.inTotals && e.dir === 'in') { var k = e.who ? 'Renta de sillas que cobraste' : 'Servicios y ventas'; ins[k] = (ins[k] || 0) + e.amount; } });
     var offs = SB.entries.filter(function (e) { return SB.inP(e, p) && !e.inTotals && !e.flag; });
     var row = function (a, b, cls) { return '<div class="rp-r ' + (cls || '') + '"><span>' + a + '</span><span>' + M(b) + '</span></div>'; };
-    SB.sheet('<div class="sh-body"><p class="sh-kicker">' + SB.business + ' · demostración</p><h2 class="sh-title">Resumen para tu contador</h2><p class="sh-meta">Enero a octubre de 2026 · hasta el ' + SB.dateShort(SB.today) + '</p>' +
-      '<div class="report"><p class="rp-h">Entró</p>' + Object.keys(ins).map(function (k) { return row(k, ins[k]); }).join('') + row('Total que entró', t.in, 'tot') +
-      '<p class="rp-h">Salió, por categoría</p>' + c.rows.map(function (r) { return row(r.cat.name, r.v); }).join('') + row('Total que salió', t.out, 'tot') +
-      row('Resultado estimado', t.res, 'grand') + '<p class="rp-h">Esperando a tu contador</p>' + t.outside.map(function (e) { return '<div class="rp-r wait"><span>' + esc(e.title) + ' · ' + SB.dm(e.date) + '</span><span>' + M(e.amount) + '</span></div>'; }).join('') + '<p class="rp-h">No es del salón o no cuenta</p>' + offs.map(function (e) { return '<div class="rp-r wait"><span>' + SB.why(e).t.split(' · ')[0] + ': ' + esc(e.title) + ' · ' + SB.dm(e.date) + '</span><span>' + M(e.amount) + '</span></div>'; }).join('') + '</div>' +
+    return '<div class="report"><p class="rp-h">Entró</p>' + (Object.keys(ins).map(function (k) { return row(k, ins[k]); }).join('') || '<div class="rp-r"><span>Nada en este periodo</span><span></span></div>') + row('Total que entró', t.in, 'tot') +
+      '<p class="rp-h">Salió, por categoría</p>' + (c.rows.map(function (r) { return row(r.cat.name, r.v); }).join('') || '<div class="rp-r"><span>Nada en este periodo</span><span></span></div>') + row('Total que salió', t.out, 'tot') +
+      row('Resultado estimado', t.res, 'grand') + '<p class="rp-h">Esperando a tu contador</p>' + (t.outside.map(function (e) { return '<div class="rp-r wait"><span>' + esc(e.title) + ' · ' + SB.dm(e.date) + '</span><span>' + M(e.amount) + '</span></div>'; }).join('') || '<div class="rp-r wait"><span>Nada</span><span></span></div>') + '<p class="rp-h">No es del salón o no cuenta</p>' + (offs.map(function (e) { return '<div class="rp-r wait"><span>' + SB.why(e).t.split(' · ')[0] + ': ' + esc(e.title) + ' · ' + SB.dm(e.date) + '</span><span>' + M(e.amount) + '</span></div>'; }).join('') || '<div class="rp-r wait"><span>Nada</span><span></span></div>') + '</div>';
+  };
+  SB.reportSheet = function () {
+    var keys = [['year', 'Enero a hoy'], ['m:2026-10', 'Octubre'], ['m:2026-09', 'Septiembre'], ['m:2026-08', 'Agosto']], cur = 'year', fmt = 'PDF';
+    var sub = function (k) { var p = SB.reportPeriod(k); return k === 'year' ? 'Enero a octubre de 2026 · hasta el ' + SB.dateShort(SB.today) : SB.cap(p.long); };
+    SB.sheet('<div class="sh-body"><p class="sh-kicker">' + SB.business + ' · demostración</p><h2 class="sh-title">Resumen para tu contador</h2><p class="sh-meta" data-rp-sub>' + sub(cur) + '</p>' +
+      '<fieldset class="field"><legend>¿Qué periodo?</legend><div class="chips wrap" role="group" aria-label="Periodo del resumen">' + keys.map(function (k) { return '<button type="button" class="chip' + (k[0] === cur ? ' sel' : '') + '" data-rp="' + k[0] + '" aria-pressed="' + (k[0] === cur) + '">' + k[1] + '</button>'; }).join('') + '</div></fieldset>' +
+      '<div data-rp-body>' + SB.reportBody(cur) + '</div>' +
       '<p class="sh-why">' + I('info') + '<span>' + SB.ui.truth + ' Los anulados y el dinero entre tus cuentas no están aquí.</span></p>' +
-      '<div class="sh-actions"><button class="btn btn-main" data-demo-dl>' + I('doc') + 'PDF para mi contador</button><button class="btn btn-quiet" data-demo-dl>Excel (CSV)</button></div><button class="btn btn-quiet sh-done" data-close>Listo</button></div>', { label: 'Resumen para tu contador', cls: 'sheet-report' });
+      '<fieldset class="field rp-send"><legend>Enviar a mi contador</legend><div class="chips wrap" role="group" aria-label="Formato"><button type="button" class="chip sel" data-rp-fmt="PDF" aria-pressed="true">' + I('doc') + 'PDF</button><button type="button" class="chip" data-rp-fmt="CSV" aria-pressed="false">' + I('list') + 'CSV (Excel)</button></div></fieldset>' +
+      '<div class="sh-actions"><button class="btn btn-main" data-rp-send>' + I('doc') + 'Enviar a mi contador</button></div><button class="btn btn-quiet sh-done" data-close>Listo</button></div>', {
+      label: 'Resumen para tu contador', cls: 'sheet-report', onMount: function (sh) {
+        sh.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-rp]'), f = e.target.closest('[data-rp-fmt]'), send = e.target.closest('[data-rp-send]');
+          if (b) { cur = b.dataset.rp; sh.querySelectorAll('[data-rp]').forEach(function (x) { var on = x === b; x.classList.toggle('sel', on); x.setAttribute('aria-pressed', on); }); sh.querySelector('[data-rp-body]').innerHTML = SB.reportBody(cur); sh.querySelector('[data-rp-sub]').textContent = sub(cur); }
+          if (f) { fmt = f.dataset.rpFmt; sh.querySelectorAll('[data-rp-fmt]').forEach(function (x) { var on = x === f; x.classList.toggle('sel', on); x.setAttribute('aria-pressed', on); }); }
+          if (send) { var lab = keys.filter(function (k) { return k[0] === cur; })[0][1]; SB.haptic('success'); SB.toast('Resumen de ' + lab.toLowerCase() + ' en ' + fmt + ' listo para tu contador. Demostración: no se envía nada', 'warn'); }
+        });
+      }
+    });
+  };
+  SB.renterStats = function (id) {
+    var p = SB.period('year'), st = { rent: 0, held: 0, tips: 0, given: 0, list: [] }, r2 = function (n) { return Math.round(n * 100) / 100; };
+    SB.entries.forEach(function (e) {
+      if (e.who !== id || !SB.inP(e, p)) return; st.list.push(e); if (e.status) return;
+      if (e.dir === 'in') { if (/^Pago de renta/.test(e.title)) st.rent += e.amount; else st.held += e.amount; }
+      else if (e.dir === 'out') { if (/propinas/i.test(e.title)) st.tips += e.amount; else st.given += e.amount; }
+    });
+    st.list.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    st.left = r2(st.held - st.given); ['rent', 'held', 'tips', 'given'].forEach(function (k) { st[k] = r2(st[k]); });
+    return st;
   };
   SB.renterSheet = function (id) {
-    var r = SB.renter(id), p = SB.period('year'), list = SB.entries.filter(function (e) { return e.who === id && SB.inP(e, p); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-    var got = 0, gave = 0; list.forEach(function (e) { if (e.status) return; if (e.dir === 'in') got += e.amount; else gave += e.amount; });
-    SB.sheet('<div class="sh-body renter-sh" style="--who:' + r.colour + '"><p class="sh-kicker"><i class="who-pip2"></i>' + r.role + ' · enero a hoy</p><h2 class="sh-title">' + r.name + '</h2>' +
-      '<div class="rs-two"><div><span>' + r.short + ' le pagó al salón</span><b>' + M(got) + '</b><small>Renta y cobros. Esto sí es ingreso del salón.</small></div><div><span>El salón le pasó a ' + r.short + '</span><b>' + M(gave) + '</b><small>Su dinero (propinas, cobros). No es gasto tuyo.</small></div></div>' +
-      '<ul class="rows">' + list.map(function (e) { return SB.ui.row(e, { date: true }); }).join('') + '</ul>' +
-      '<div class="sh-actions"><button class="btn btn-main" data-demo-share>Enviarle este resumen a ' + r.short + '</button></div><button class="btn btn-quiet sh-done" data-close>Listo</button></div>', { label: r.name });
+    var r = SB.renter(id), st = SB.renterStats(id), no = '<em class="rs-no">No es gasto del salón</em>';
+    var left = st.left > 0.004 ? { v: st.left, n: 'El salón todavía le debe entregar esto.' } : st.left < -0.004 ? { v: 0, n: 'Al corriente. Ya le entregaste ' + M(-st.left) + ' de más.' } : { v: 0, n: 'Al corriente: no le debes nada.' };
+    SB.sheet('<div class="sh-body renter-sh" style="--who:' + r.colour + '"><p class="sh-kicker"><i class="who-pip2"></i>Mi silla · ' + r.role + ' · enero a hoy</p><h2 class="sh-title">' + r.name + '</h2>' +
+      '<div class="rs-grid">' +
+      '<div><span>Renta pagada</span><b>' + M(st.rent) + '</b><small>Lo que ' + r.short + ' le pagó al salón por su silla.</small>' + no + '</div>' +
+      '<div><span>Cobros que el salón guardó para ella</span><b>' + M(st.held) + '</b><small>Clientes que pagaron en el salón por su trabajo.</small>' + no + '</div>' +
+      '<div><span>Propinas</span><b>' + M(st.tips) + '</b><small>Propinas que ya le entregaste.</small>' + no + '</div>' +
+      '<div class="rs-left"><span>Falta por liquidar</span><b>' + M(left.v) + '</b><small>' + left.n + '</small>' + no + '</div></div>' +
+      '<p class="sh-label">Movimientos de ' + r.short + ' (' + st.list.length + ')</p><ul class="rows">' + st.list.map(function (e) { return SB.ui.row(e, { date: true }); }).join('') + '</ul>' +
+      '<div class="sh-actions"><button class="btn btn-main" data-share-renter="' + r.short + '">' + I('doc') + 'Compartir</button></div><button class="btn btn-quiet sh-done" data-close>Listo</button></div>', { label: 'Mi silla · ' + r.name, cls: 'sheet-renter' });
   };
   SB.teamSheet = function () {
     var p = SB.period('year');
@@ -852,12 +946,20 @@
     if ((x = e.target.closest('[data-step]'))) { SB.step(+x.dataset.step); return; }
     if ((x = e.target.closest('[data-renter]'))) { SB.renterSheet(x.dataset.renter); return; }
     if ((x = e.target.closest('[data-close-month]'))) { SB.closeSheet(x.dataset.closeMonth); return; }
+    if ((x = e.target.closest('[data-tag-need]'))) { e.stopPropagation(); SB.attentionSheet(x.dataset.tagNeed); return; }
+    if ((x = e.target.closest('[data-share-renter]'))) { SB.haptic('success'); SB.toast('Hoja de ' + x.dataset.shareRenter + ' lista para compartir. Demostración: no se envía nada', 'warn'); return; }
+    if ((x = e.target.closest('[data-go]'))) { SB.go(x.dataset.go); return; }
+    if ((x = e.target.closest('[data-reopen]'))) { SB.reopenSept(); return; }
+    if ((x = e.target.closest('[data-scroll-to]'))) { var tg = doc.querySelector(x.dataset.scrollTo); if (tg) tg.scrollIntoView({ block: 'center', behavior: still() ? 'auto' : 'smooth' }); return; }
     if ((x = e.target.closest('[data-demo-share]'))) { SB.toast('En la demostración no se envía nada', 'warn'); return; }
     if ((x = e.target.closest('[data-warn]'))) { SB.attentionSheet('a2'); return; }
     if ((x = e.target.closest('[data-entry]'))) { SB.entrySheet(x.dataset.entry); return; }
     if ((x = e.target.closest('[data-need]'))) { SB.attentionSheet(x.dataset.need); return; }
     if ((x = e.target.closest('[data-pick-cat]'))) { SB.catSheet(x.dataset.pickCat); return; }
-    if ((x = e.target.closest('[data-do]'))) { SB.decide(x.dataset.id, x.dataset.do); return; }
+    if ((x = e.target.closest('[data-do]'))) {
+      if (x.dataset.do === 'void') { var idv = x.dataset.id; SB.confirmSheet({ kicker: 'Anular', title: '¿Anular la segunda anotación?', text: 'Se queda en tu lista marcada «Anulado» y ya no cuenta: el gasto de guantes baja de ' + M(39.98) + ' a ' + M(19.99) + ' en octubre.', yes: 'Sí, anular', onYes: function () { SB.decide(idv, 'void'); } }); return; }
+      SB.decide(x.dataset.id, x.dataset.do); return;
+    }
     if ((x = e.target.closest('[data-explain]'))) { SB.explain(x.dataset.explain); return; }
     if ((x = e.target.closest('[data-anotar]'))) { SB.anotarSheet(); return; }
     if ((x = e.target.closest('[data-receipt]'))) { SB.receiptSheet(x.dataset.receipt); return; }
@@ -881,11 +983,19 @@
   });
 
   // ======================= forms =======================
-  SB.lastCat = 'materiales';
+  SB.lastCat = LS('lastcat') || null;
+  // the 3 categories used most (by count of purchases); the last one used goes first
+  SB.topCats = function () {
+    var n = {}; SB.entries.forEach(function (e) { if (e.dir === 'out' && e.cat && e.kind !== 'payout') n[e.cat] = (n[e.cat] || 0) + 1; });
+    var all = SB.cats.map(function (c) { return c.id; }).filter(function (id) { return n[id]; }).sort(function (a, b) { return n[b] - n[a]; });
+    var last = SB.lastCat && SB.cat(SB.lastCat) ? SB.lastCat : null;
+    return { ids: (last ? [last].concat(all.filter(function (id) { return id !== last; })) : all).slice(0, 3), last: last };
+  };
   SB.ui.catGrid = function () {
-    var top = ['materiales', 'renta', 'luz', 'publicidad'];
-    return '<fieldset class="field cats-f"><legend>¿En qué fue?</legend><div class="cat-grid">' + top.map(function (id) { var c = SB.cat(id); return '<label class="cat-t"><input type="radio" name="cat" value="' + id + '"' + (id === SB.lastCat ? ' checked' : '') + '>' + I(c.icon) + '<span>' + c.name + (id === SB.lastCat ? '<small>La última que usaste</small>' : '') + '</span></label>'; }).join('') + '</div>' +
-      '<div class="cat-row"><select name="catMore" class="cat-more" aria-label="Otra categoría"><option value="">Otra categoría…</option>' + SB.cats.filter(function (c) { return top.indexOf(c.id) < 0; }).map(function (c) { return '<option value="' + c.id + '">' + c.name + (c.pending ? ' (espera a tu contador)' : '') + '</option>'; }).join('') + '</select><label class="chip chip-quiet"><input type="radio" name="cat" value="none">' + I('info') + '<span>No sé</span></label></div></fieldset>';
+    var T = SB.topCats(), top = T.ids;
+    return '<fieldset class="field cats-f"><legend>¿En qué fue?</legend><div class="cat-grid">' + top.map(function (id, i) { var c = SB.cat(id); return '<label class="cat-t"><input type="radio" name="cat" value="' + id + '"' + (i === 0 ? ' checked' : '') + '>' + I(c.icon || 'out') + '<span>' + c.name + (i === 0 ? '<small>' + (T.last ? 'La última que usaste' : 'La que más usas') + '</small>' : '') + '</span></label>'; }).join('') + '</div>' +
+      '<div class="cat-row"><select name="catMore" class="cat-more" aria-label="Otra categoría"><option value="">Otra categoría…</option>' + SB.cats.filter(function (c) { return top.indexOf(c.id) < 0; }).map(function (c) { return '<option value="' + c.id + '">' + c.name + (c.pending ? ' (espera a tu contador)' : '') + '</option>'; }).join('') + '</select></div>' +
+      '<label class="cat-t cat-none"><input type="radio" name="cat" value="none">' + I('info') + '<span>No sé, que decida mi contador<small>Se guarda y espera a tu contador: todavía no cuenta.</small></span></label></fieldset>';
   };
   SB.ui.dateChips = function () {
     return '<fieldset class="field"><legend>¿Cuándo?</legend><div class="chips wrap date-chips"><label class="chip"><input type="radio" name="dwhen" value="' + SB.today + '" checked><span>Hoy · ' + SB.dm(SB.today) + '</span></label><label class="chip"><input type="radio" name="dwhen" value="' + addDays(SB.today, -1) + '"><span>Ayer</span></label><label class="chip"><input type="radio" name="dwhen" value="other"><span>Otro día</span></label></div><input class="date-other" id="date" name="date" type="date" value="' + SB.today + '" min="2026-01-01" max="' + SB.today + '" hidden aria-label="Fecha"></fieldset>';
@@ -917,7 +1027,7 @@
   SB.ui.form = function (kind) {
     kind = kind || 'out'; var dir = kind === 'in' ? 'in' : 'out', scan = kind === 'scan';
     return '<div class="form-page ' + (scan ? 'has-receipt' : '') + '">' + SB.ui.back('inicio', 'Inicio') +
-      '<header class="page-h"><h1>' + (dir === 'in' ? 'Entró dinero' : scan ? 'Revisa el recibo' : 'Pagué algo') + '</h1></header>' +
+      '<header class="page-h"><h1>' + (dir === 'in' ? 'Entró dinero' : scan ? 'Revisa el recibo' : 'Pagué algo') + '</h1></header><p class="form-when">' + I('clock') + '<span>Fecha: <b>Hoy · ' + SB.dm(SB.today) + '</b></span><button type="button" class="linkbtn" data-scroll-to=".date-chips">Cambiar</button></p>' +
       (scan ? '<div class="receipt-pane"><button class="receipt-frame" data-zoom="r3" aria-label="Ver la foto del recibo en grande">' + SB.receiptSVG('receipt', SB.receiptFor({ id: 'r1' })) + '<span class="scanline" aria-hidden="true"></span></button><p class="read-status" aria-live="polite"><span class="rs-reading">' + I('sparkle') + 'Leyendo el recibo…</span><span class="rs-read">' + I('check') + 'Leímos esto del recibo. Revísalo antes de guardar.</span></p></div>' : '') +
       '<form class="form" novalidate>' + SB.ui.formBody(dir) + SB.ui.submit(dir) + '</form></div>';
   };
@@ -944,7 +1054,7 @@
       var btn = f.querySelector('[type=submit]'); btn.classList.add('saving'); btn.disabled = true;
       setTimeout(function () {
         var en = SB.addEntry({ dir: dir, amount: v, date: fd.get('date') || SB.today, title: (fd.get('title') || '').trim() || (dir === 'in' ? 'Entrada sin descripción' : 'Compra sin descripción'), cat: dir === 'out' ? cat : null, account: fd.get('account'), receipt: scope.querySelector('.receipt-pane') ? 'r3' : null, who: fd.get('who') || null, taxPending: !!parseFloat(fd.get('tax') || '0') });
-        if (cat) SB.lastCat = cat; if (en.receipt) { var rr = SB.receipts.find(function (r) { return r.id === 'r3'; }); if (rr) { rr.done = true; rr.entry = en.id; rr.amount = v; rr.title = en.title; } }
+        if (cat) { SB.lastCat = cat; LS('lastcat', cat); } if (en.receipt) { var rr = SB.receipts.find(function (r) { return r.id === 'r3'; }); if (rr) { rr.done = true; rr.entry = en.id; rr.amount = v; rr.title = en.title; } }
         btn.classList.remove('saving'); btn.classList.add('saved'); SB.haptic('success');
         setTimeout(function () { SB.toast(en.inTotals ? 'Se guardó · ' + M(v) : 'Se guardó, pero todavía no cuenta: ' + (en.flag || '').toLowerCase()); SB.go('inicio', { dir: -1 }); }, 480);
       }, 380);
@@ -972,6 +1082,112 @@
     var th = SB.prefs.theme || SB.defaultTheme || 'light';
     return '<section class="set"><h2 class="set-h">Cómo se ve</h2><div class="seg" role="group" aria-label="Tema">' + [['light', 'Claro', 'sun'], ['dark', 'Oscuro', 'moon'], ['auto', 'Automático', 'vibrate']].map(function (o) { return '<button class="seg-b' + (th === o[0] ? ' sel' : '') + '" data-theme-set="' + o[0] + '" aria-pressed="' + (th === o[0]) + '">' + I(o[2]) + o[1] + '</button>'; }).join('') + '</div></section>' +
       '<section class="set"><h2 class="set-h">Cómo responde</h2><label class="switch-row"><span>' + I('vibrate') + '<span><b>Vibración al tocar</b><small>En teléfonos que lo permiten</small></span></span><input type="checkbox" role="switch" id="haptics"' + (SB.prefs.haptics ? ' checked' : '') + '></label></section>';
+  };
+
+  // ======================= Ventas de Square (simulated import) =======================
+  // No real file is read: any file you pick, or the sample, loads the same fictional October 1-9 sales.
+  // Per sale: sale = what the salon earns, tip = goes to the stylist, tax = held, fee = Square's commission (an expense).
+  var SQ = SB.square = { phase: 'idle', range: 'month', from: '2026-10-01', to: '2026-10-09', file: null, last: null, batch: 0 };
+  var r2 = function (n) { return Math.round(n * 100) / 100; };
+  var Q = function (id, date, t, sale, tip, tax, dup) { return { id: id, date: date, title: t + ' (ficticio)', sale: sale, tip: tip, tax: tax, fee: r2((sale + tip + tax) * 0.029 + 0.3), imported: !!dup, pre: !!dup }; };
+  SQ.orders = [
+    Q('s1', '2026-10-01', 'Corte y peinado', 45, 8, 0), Q('s2', '2026-10-01', 'Tinte completo', 80, 15, 0),
+    Q('s3', '2026-10-02', 'Corte de caballero', 25, 5, 0),
+    Q('s4', '2026-10-03', 'Peinado de fiesta', 60, 10, 0), Q('s5', '2026-10-03', 'Champú vendido', 18, 0, 1.13),
+    Q('s6', '2026-10-04', 'Corte y color', 95, 18, 0),
+    Q('s7', '2026-10-06', 'Manicura', 35, 6, 0), Q('s8', '2026-10-06', 'Alisado', 120, 20, 0),
+    Q('s9', '2026-10-07', 'Corte de niña', 20, 4, 0), Q('s10', '2026-10-07', 'Tratamiento de keratina', 40, 7, 0),
+    Q('s11', '2026-10-08', 'Corte y peinado', 50, 9, 0),
+    Q('s12', '2026-10-09', 'Corte y peinado', 80, 14, 0, true), Q('s13', '2026-10-09', 'Tinte y secado', 120, 22, 0, true)
+  ];
+  SQ.rangeOf = function () {
+    if (SQ.range === 'month') return { from: SB.today.slice(0, 7) + '-01', to: SB.today };
+    if (SQ.range === 'year') return { from: SB.FIRST, to: SB.today };
+    return { from: SQ.from, to: SQ.to };
+  };
+  SQ.view = function () {
+    var R = SQ.rangeOf(), days = {}, T = { nNew: 0, nDup: 0, sale: 0, tip: 0, tax: 0, fee: 0 };
+    SQ.orders.filter(function (o) { return o.date >= R.from && o.date <= R.to; }).forEach(function (o) {
+      var d = days[o.date] = days[o.date] || { date: o.date, orders: [], nNew: 0, nDup: 0, sale: 0, tip: 0, tax: 0, fee: 0 };
+      d.orders.push(o);
+      if (o.imported) { d.nDup++; T.nDup++; } else { d.nNew++; T.nNew++; ['sale', 'tip', 'tax', 'fee'].forEach(function (k) { d[k] += o[k]; T[k] += o[k]; }); }
+    });
+    ['sale', 'tip', 'tax', 'fee'].forEach(function (k) { T[k] = r2(T[k]); });
+    return { days: Object.keys(days).sort().map(function (k) { var d = days[k]; ['sale', 'tip', 'tax', 'fee'].forEach(function (x) { d[x] = r2(d[x]); }); return d; }), T: T };
+  };
+  SQ.status = function () { var l = SQ.last; return l ? 'Última importación: ' + SB.dm(l.at) + ' · ' + l.n + ' ventas, hasta el ' + SB.dm(l.until) : 'Todavía no has importado ventas'; };
+  SQ.preview = function () {
+    var V = SQ.view(), T = V.T;
+    if (!V.days.length) return '<div class="empty">' + I('search') + '<p>No hay ventas en esas fechas.</p></div>';
+    var dl = function (a, b, note, cls) { return '<div class="' + (cls || '') + '"><dt>' + a + '<small>' + note + '</small></dt><dd>' + b + '</dd></div>'; };
+    return '<div class="sq-file">' + I('doc') + '<span><b>' + esc(SQ.file || 'ventas-square-ejemplo.csv') + '</b><small>' + (SQ.file && SQ.file !== 'ventas-square-ejemplo.csv' ? 'Demostración: no leemos tu archivo, mostramos ventas de ejemplo.' : 'Archivo de ejemplo con ventas ficticias.') + '</small></span></div>' +
+      '<p class="sq-count"><b>' + T.nNew + ' ventas nuevas</b>' + (T.nDup ? ' · ' + T.nDup + ' ya estaban anotadas, no se repiten' : '') + '</p>' +
+      V.days.map(function (d) {
+        return '<section class="sq-day"><h3><span>' + SB.cap(SB.dayLabel(d.date)) + '</span><b>' + (d.nNew ? M(d.sale) : 'Sin ventas nuevas') + '</b></h3><ul class="sq-orders">' + d.orders.map(function (o) { return '<li class="' + (o.imported ? 'dup' : '') + '"><span>' + esc(o.title) + (o.imported ? ' <em>Ya anotada</em>' : '') + '</span><span>' + M(o.sale) + '</span></li>'; }).join('') + '</ul>' +
+          (d.nNew ? '<dl class="sq-dl">' + dl('Ventas', M(d.sale), 'entra a tu salón', 'in') + dl('Propinas', M(d.tip), 'van a tu equipo, no son ingreso del salón', 'off') + dl('Impuesto de venta', M(d.tax), 'se guarda, no es ingreso', 'off') + dl('Comisión de Square', '− ' + M(d.fee), 'es un gasto', 'out') + '</dl>' : '') +
+          (d.nDup ? '<p class="sq-dup">' + I('check') + d.nDup + ' ya estaban anotadas, no se repiten</p>' : '') + '</section>';
+      }).join('') +
+      '<div class="sq-total"><p class="sq-th">Al importar, esto cambia en tus libros</p><div><span>Entra (ventas)</span><b>+ ' + M(T.sale) + '</b></div><div><span>Sale (comisión de Square)</span><b>− ' + M(T.fee) + '</b></div><div class="off"><span>No cuenta: propinas de tu equipo</span><b>' + M(T.tip) + '</b></div><div class="off"><span>No cuenta: impuesto guardado</span><b>' + M(T.tax) + '</b></div></div>' +
+      '<div class="submit-bar sq-bar"><button class="btn btn-main btn-save" type="button" data-sq-import' + (T.nNew ? '' : ' disabled') + '>' + (T.nNew ? 'Importar ' + T.nNew + ' ventas' : 'No hay ventas nuevas') + '</button><button class="btn btn-quiet" type="button" data-sq-cancel>Cancelar</button></div>';
+  };
+  SQ.render = function () {
+    SQ.phase = 'idle';
+    var chips = [['month', 'Este mes'], ['year', 'Desde enero'], ['custom', 'Elegir fechas']];
+    return '<div class="square">' + SB.ui.back('mas', 'Más') + '<header class="page-h"><h1>Ventas de Square</h1></header>' +
+      '<p class="sq-status ' + (SQ.last ? 'ok' : '') + '" data-sq="status">' + I(SQ.last ? 'check' : 'clock') + '<span>' + SQ.status() + '</span></p>' +
+      '<ol class="sq-steps"><li><b>1</b><span>Descarga el archivo de Square</span></li><li><b>2</b><span>Súbelo aquí</span></li><li><b>3</b><span>Revisa y confirma</span></li></ol>' +
+      '<fieldset class="field sq-range"><legend>¿Desde cuándo traer las ventas?</legend><div class="chips wrap" role="group" aria-label="Fechas">' + chips.map(function (c) { return '<button type="button" class="chip' + (SQ.range === c[0] ? ' sel' : '') + '" data-sq-range="' + c[0] + '" aria-pressed="' + (SQ.range === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="sq-dates" data-sq="dates"' + (SQ.range === 'custom' ? '' : ' hidden') + '><label>Desde<input type="date" id="sq-from" value="' + SQ.from + '" min="2026-01-01" max="' + SB.today + '"></label><label>Hasta<input type="date" id="sq-to" value="' + SQ.to + '" min="2026-01-01" max="' + SB.today + '"></label></div>' +
+      '<p class="hint">Así también se anotan las ventas viejas. El archivo de ejemplo solo trae ventas del 1 al 9 de oct.</p></fieldset>' +
+      '<div class="sq-actions"><label class="btn btn-main sq-file-btn" for="sq-file">' + I('plus') + 'Subir archivo de Square</label><input type="file" id="sq-file" accept=".csv,.xlsx,text/csv" class="sq-input"><button type="button" class="btn btn-quiet" data-sq-sample>Usar archivo de ejemplo</button></div>' +
+      '<div data-sq="preview" aria-live="polite"></div></div>';
+  };
+  SQ.paint = function () {
+    var pv = doc.querySelector('[data-sq=preview]'); if (!pv) return;
+    pv.innerHTML = SQ.phase === 'preview' ? SQ.preview() : '';
+    var st = doc.querySelector('[data-sq=status]'); if (st) st.innerHTML = I(SQ.last ? 'check' : 'clock') + '<span>' + SQ.status() + '</span>', st.classList.toggle('ok', !!SQ.last);
+    var a = doc.querySelector('.sq-actions'); if (a) a.hidden = SQ.phase === 'preview';
+  };
+  SQ.open = function (name) {
+    SQ.file = name || 'ventas-square-ejemplo.csv'; SQ.phase = 'preview'; SQ.paint(); SB.haptic('select');
+    var pv = doc.querySelector('[data-sq=preview]'); if (pv && pv.scrollIntoView) pv.scrollIntoView({ block: 'start', behavior: still() ? 'auto' : 'smooth' });
+  };
+  SQ.commit = function () {
+    var V = SQ.view(), fresh = [], byDay = {}, tips = 0, tax = 0, until = '', sale = 0, id = ++SQ.batch, added = [];
+    V.days.forEach(function (d) { d.orders.forEach(function (o) { if (!o.imported) { fresh.push(o); byDay[o.date] = (byDay[o.date] || 0) + o.fee; tips += o.tip; tax += o.tax; sale += o.sale; } }); });
+    if (!fresh.length) return;
+    V.days.forEach(function (d) { if (d.date > until) until = d.date; }); // up to the last day in the file, even if those sales were already noted
+    var pt = SB.totals(SB.period()); SB.mem.in = pt.in; SB.mem.out = pt.out; SB.mem.res = pt.res; // so the numbers count up from what was on screen
+    fresh.forEach(function (o) { o.imported = true; added.push(E('sq' + id + '-' + o.id, o.date, o.title, o.sale, 'in', { account: 'Tarjetas', square: true })); });
+    Object.keys(byDay).sort().forEach(function (d) { added.push(E('sq' + id + '-f' + d, d, 'Comisión de Square (ficticia)', r2(byDay[d]), 'out', { cat: 'comisiones', account: 'Tarjetas', square: true })); });
+    if (tips > 0) added.push(E('sq' + id + '-tips', until, 'Propinas de Square para tu equipo (ficticio)', r2(tips), 'in', { inTotals: false, kind: 'tips', square: true }));
+    if (tax > 0) added.push(E('sq' + id + '-tax', until, 'Impuesto de venta de Square (ficticio)', r2(tax), 'in', { inTotals: false, flag: 'Pendiente de tu contador', square: true }));
+    added.forEach(function (e) { SB.entries.push(e); });
+    var prev = SQ.last; SQ.last = { at: SB.today, until: until, n: fresh.length }; SQ.phase = 'idle'; SQ.file = null;
+    SB.state.mode = 'month'; SB.state.month = until.slice(0, 7); SB.haptic('success');
+    SB.toast('Importaste ' + fresh.length + ' ventas de Square (' + M(sale) + ')', null, function () {
+      var q0 = SB.totals(SB.period()); SB.mem.in = q0.in; SB.mem.out = q0.out; SB.mem.res = q0.res;
+      SB.entries = SB.entries.filter(function (e) { return added.indexOf(e) < 0; }); fresh.forEach(function (o) { o.imported = false; }); SQ.last = prev; SQ.phase = 'idle';
+      SB.refresh(); SQ.paint();
+    });
+    SB.go('dinero');
+  };
+  SQ.mount = function (s) {
+    var root_ = s.querySelector('.square'); SQ.paint();
+    root_.addEventListener('click', function (e) {
+      var x;
+      if ((x = e.target.closest('[data-sq-range]'))) {
+        SQ.range = x.dataset.sqRange; root_.querySelectorAll('[data-sq-range]').forEach(function (b) { var on = b === x; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
+        root_.querySelector('[data-sq=dates]').hidden = SQ.range !== 'custom'; if (SQ.phase === 'preview') SQ.paint(); return;
+      }
+      if (e.target.closest('[data-sq-sample]')) { SQ.open(); return; }
+      if (e.target.closest('[data-sq-cancel]')) { SQ.phase = 'idle'; SQ.paint(); return; }
+      if (e.target.closest('[data-sq-import]')) { SQ.commit(); return; }
+    });
+    root_.addEventListener('change', function (e) {
+      if (e.target.id === 'sq-file') { var f = e.target.files && e.target.files[0]; if (f) SQ.open(f.name); e.target.value = ''; }
+      if (e.target.id === 'sq-from' || e.target.id === 'sq-to') { SQ.from = root_.querySelector('#sq-from').value || SQ.from; SQ.to = root_.querySelector('#sq-to').value || SQ.to; if (SQ.from > SQ.to) { var t = SQ.from; SQ.from = SQ.to; SQ.to = t; root_.querySelector('#sq-from').value = SQ.from; root_.querySelector('#sq-to').value = SQ.to; } if (SQ.phase === 'preview') SQ.paint(); }
+    });
   };
 
   // ======================= boot =======================

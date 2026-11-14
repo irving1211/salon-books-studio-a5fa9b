@@ -126,7 +126,7 @@
             '<div class="st-cols"><button data-explain="in"><span>Entró</span><b data-b="in"></b></button><button data-explain="out"><span>Salió</span><b data-b="out"></b></button></div>' +
             SB.ui.chart(104, '', { padx: 18, padt: 20 }) +
             '<div class="st-foot"><p class="st-note">' + SB.ui.truth + '</p><button class="st-explain" data-explain="res">' + I('info') + 'Explicar</button></div>' +
-          '</section><div class="alert-wrap" data-b="alert"></div>' + SB.ui.actions() +
+          '</section><div class="alert-wrap" data-b="alert"></div>' + SB.ui.actions() + '<a class="sq-line" href="#/square" data-b="sqline"></a>' +
           '<section class="sec need-sec"><div class="sec-h"><h2>Necesita tu atención</h2><span class="count" data-b="needcount"></span><a class="more-link" href="#/revisar">Revisar' + I('chev') + '</a></div><div data-b="needs" data-max="3"></div></section>' +
         '</div>' +
         '<div class="col-r"><section class="sec"><div class="sec-h"><h2>Lo último que anotaste</h2></div><div data-b="recent" data-n="6"></div><a class="see-all" href="#/dinero">Ver todo en Dinero' + I('chev') + '</a></section></div></div>';
@@ -142,6 +142,7 @@
         '<div class="d-main"><p class="listsum" data-b="listsum"></p><div data-b="list" data-style="ledger"></div></div></div>';
     }
   };
+  SB.routes.square = { tab: 'mas', render: SB.square.render, mount: SB.square.mount };
   SB.routes.recibos = {
     render: function () {
       return '<div class="recibos"><header class="page-h"><h1>Recibos</h1><a class="btn btn-main btn-sm" href="#/anotar/scan">' + I('camera') + 'Escanear</a></header><p class="lede">La caja de tus recibos. Los que faltan anotar llevan sello naranja.</p>' +
@@ -159,6 +160,8 @@
     render: function () {
       return '<div class="mas"><header class="page-h"><h1>Más</h1></header>' +
         '<section class="set"><h2 class="set-h">Tu salón</h2><div class="m-card">' +
+        '<button class="m-row" data-go="square"><span class="m-ic">' + I('card') + '</span><span><b>Ventas de Square</b><small>' + SB.square.status() + '</small></span>' + I('chev') + '</button>' +
+        (SB.closedSept ? '<button class="m-row" data-reopen><span class="m-ic">' + I('lock') + '</span><span><b>Septiembre está cerrado</b><small>Ya no se puede cambiar. Toca para reabrirlo.</small></span>' + I('chev') + '</button>' : '') +
         '<button class="m-row hl" data-report><span class="m-ic">' + I('doc') + '</span><span><b>Resumen para tu contador</b><small>Enero a octubre, por categoría</small></span>' + I('chev') + '</button>' +
         '<button class="m-row" data-team><span class="m-ic">' + I('team') + '</span><span><b>Equipo y sillas</b><small class="who-row">' + SB.renters.map(function (r) { return '<i style="--who:' + r.colour + '"></i>' + r.short; }).join(' ') + '</small></span>' + I('chev') + '</button>' +
         '<button class="m-row" data-lang><span class="m-ic">' + I('globe') + '</span><span><b>Idioma</b><small>Español · English</small></span>' + I('chev') + '</button></div></section>' +
