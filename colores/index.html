@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Salon Books · Cuaderno colour options (fictional demo data).">
+<meta name="theme-color" content="#f6f2ea">
+<title>Cuaderno · paletas</title>
+<link rel="stylesheet" href="../_lib/base.css">
+<script src="../_lib/palettes.js"></script>
+<style>
+:root{--bg:#f6f2ea;--text:#1a1a1a;--muted:#5d5a54;--line:#e2dccf}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121110;--text:#eeeae2;--muted:#a8a29a;--line:#2a2724}}
+body{background:var(--bg);color:var(--text);margin:0;font-family:var(--font-sans)}
+body::before{display:none}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 80px}
+h1{font:500 clamp(34px,8vw,56px)/1.02 var(--font-serif);font-style:italic;letter-spacing:-.02em;margin:0}
+.lede{max-width:640px;font-size:17px;line-height:1.5;color:var(--muted);margin:14px 0 8px}
+.how{font-size:15px;line-height:1.5;color:var(--muted);max-width:640px;margin:0 0 28px}
+.how b{color:var(--text)}
+.grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+.pal{border:1px solid var(--line);border-radius:26px;padding:16px;background:color-mix(in srgb,var(--bg) 60%,#fff 40%);scroll-margin-top:16px}
+@media (prefers-color-scheme:dark){.pal{background:color-mix(in srgb,var(--bg) 85%,#fff 15%)}}
+.pal:target{outline:3px solid var(--text);outline-offset:3px}
+.ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.num{font:700 13px var(--font-sans);color:var(--muted);letter-spacing:.08em}
+.ph h2{font:500 26px var(--font-serif);margin:0;flex:1;min-width:0}
+.fx{font:700 11px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:3px 9px;color:var(--muted)}
+.theory{font-size:14.5px;line-height:1.45;color:var(--muted);margin:8px 0 12px;min-height:3em}
+.sw{display:flex;height:30px;border-radius:12px;overflow:hidden;margin-bottom:12px;border:1px solid var(--line)}
+.sw i{flex:1}.sw i.big{flex:2.4}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shots figure{margin:0}
+.shots img{display:block;width:100%;aspect-ratio:390/700;object-fit:cover;object-position:top;border-radius:18px;border:1px solid var(--line);background:var(--line)}
+.shots figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:5px}
+.try{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;min-height:48px;border-radius:99px;background:var(--text);color:var(--bg);font-weight:650;text-decoration:none;font-size:15px}
+.cur{font:700 11px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--bg);background:var(--muted);border-radius:99px;padding:3px 9px}
+.foot{margin-top:36px;font-size:14px;color:var(--muted);max-width:640px;line-height:1.5}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Cuaderno, en nueve colores</h1>
+  <p class="lede">La misma app, la misma estructura. Solo cambian los colores y el efecto de la tarjeta grande. Cada paleta usa una familia de color en varios tonos, un papel cálido y un solo color de aviso para lo que necesita atención.</p>
+  <p class="how"><b>Cómo elegir:</b> mira las dos capturas (claro y oscuro), luego toca <b>Probar en la app</b>. Arriba aparece una barra con ‹ › para pasar de una paleta a otra sin salir de la pantalla. Dime el número o el nombre de la que te guste, o dos para mezclar.</p>
+  <div class="grid" id="grid"></div>
+  <p class="foot">Todos los colores pasan contraste AA (texto 4.5:1) en modo claro y oscuro. Demostración con datos ficticios.</p>
+</main>
+<script>
+document.getElementById('grid').innerHTML = (window.SB_PALETTES || []).map(function (p, i) {
+  var s = p.sw;
+  return '<article class="pal" id="' + p.id + '"><div class="ph"><span class="num">' + String(i + 1).padStart(2, '0') + '</span><h2>' + p.name + '</h2>' + (p.id === 'actual' ? '<span class="cur">la de ahora</span>' : '<span class="fx">' + p.fx + '</span>') + '</div>' +
+    '<p class="theory">' + p.theory + '</p>' +
+    '<div class="sw" aria-hidden="true"><i style="background:' + s[0] + '"></i><i style="background:' + s[1] + '"></i><i style="background:' + s[2] + '"></i><i class="big" style="background:linear-gradient(135deg,' + s[3] + ',' + s[4] + ')"></i><i style="background:' + s[5] + '"></i></div>' +
+    '<div class="shots"><figure><img loading="lazy" src="img/' + p.id + '-claro.jpg" alt="Inicio de ' + p.name + ' en modo claro"><figcaption>Claro</figcaption></figure><figure><img loading="lazy" src="img/' + p.id + '-oscuro.jpg" alt="Inicio de ' + p.name + ' en modo oscuro"><figcaption>Oscuro</figcaption></figure></div>' +
+    '<a class="try" href="../v1-cuaderno/index.html?p=' + p.id + '">Probar en la app ›</a></article>';
+}).join('');
+</script>
+</body>
+</html>
